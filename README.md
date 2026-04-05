@@ -1,50 +1,106 @@
-# Welcome to your Expo app 👋
+# Caffeine Tracker
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A free, open source, privacy first caffeine tracking app for iOS. No accounts, no subscriptions, no data collection. Everything stays on your device.
 
-## Get started
+---
 
-1. Install dependencies
+## Screenshots
 
-   ```bash
-   npm install
-   ```
+*Coming soon*
 
-2. Start the app
+---
 
-   ```bash
-   npx expo start
-   ```
+## Features
 
-In the output, you'll find options to open the app in a
+- **Quick Log** One tap logging for espresso, coffee, tea, energy drinks, and more
+- **610 Drink Database** Searchable database of popular drinks with accurate caffeine content, including Tim Hortons, Starbucks, McCafe, Red Bull, Monster, and hundreds more
+- **Live Caffeine Decay** Real time display of how much caffeine is currently in your system, updated every minute using a 5 hour half life model
+- **Sleep Safety Indicator** Know exactly when your caffeine will drop to a safe level for sleep
+- **Smart Notifications** Get notified 30 minutes before your caffeine drops to a sleep safe level
+- **Today's Log** View and delete all drinks logged today
+- **History** Full log of every drink ever recorded, grouped by date
+- **Privacy First** All data is encrypted and stored locally using iOS Keychain via Expo SecureStore. Nothing is ever sent to a server.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+---
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Privacy
 
-## Get a fresh project
+This app collects no data whatsoever. There are no analytics, no crash reporting, no third party SDKs, and no network requests. Your caffeine logs are encrypted at rest using iOS Keychain and never leave your device.
 
-When you're ready, run:
+---
+
+## Tech Stack
+
+- [React Native](https://reactnative.dev/) via [Expo](https://expo.dev/)
+- [Expo SecureStore](https://docs.expo.dev/versions/latest/sdk/securestore/) for encrypted local storage
+- [Expo Notifications](https://docs.expo.dev/versions/latest/sdk/notifications/) for local push notifications
+- [Expo Haptics](https://docs.expo.dev/versions/latest/sdk/haptics/) for tactile feedback
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js v20 or higher
+- [Expo Go](https://expo.dev/client) installed on your iPhone
+- A Linux, macOS, or Windows machine
+
+### Installation
 
 ```bash
-npm run reset-project
+git clone https://github.com/mamustavi/caffeine-tracker.git
+cd caffeine-tracker
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Scan the QR code with your iPhone camera to open the app in Expo Go.
 
-## Learn more
+---
 
-To learn more about developing your project with Expo, look at the following resources:
+## Building for Production
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+This app uses [EAS Build](https://docs.expo.dev/build/introduction/) to produce a production iOS binary without requiring a Mac.
 
-## Join the community
+```bash
+npm install -g eas-cli
+eas login
+eas build --platform ios
+```
 
-Join our community of developers creating universal apps.
+You will need an [Apple Developer account](https://developer.apple.com/) ($99/year) to submit to the App Store.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+---
+
+## Contributing
+
+Contributions are welcome. Please open an issue first to discuss what you would like to change.
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Commit your changes (`git commit -m 'Add your feature'`)
+4. Push to the branch (`git push origin feature/your-feature`)
+5. Open a Pull Request
+
+---
+
+## Caffeine Database
+
+The drink database (`assets/caffeine_db.json`) contains 610 drinks across five categories: Coffee, Energy Drinks, Energy Shots, Soft Drinks, Tea, and Water. Data is sourced from publicly available nutritional information.
+
+If you would like to add or correct a drink entry, please open a Pull Request with your changes to the JSON file.
+
+---
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+
+---
+
+## Developer
+
+**Adnan Mustavi** is a researcher, data analyst, and app developer based in Toronto, Canada.
+
+[github.com/mamustavi](https://github.com/mamustavi)
