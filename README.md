@@ -12,14 +12,14 @@ A free, open source, privacy first caffeine tracking app for iOS. No accounts, n
 
 ## Features
 
-- **Quick Log** One tap logging for espresso, coffee, tea, energy drinks, and more
-- **610 Drink Database** Searchable database of popular drinks with accurate caffeine content, including Tim Hortons, Starbucks, McCafe, Red Bull, Monster, and hundreds more
-- **Live Caffeine Decay** Real time display of how much caffeine is currently in your system, updated every minute using a 5 hour half life model
-- **Sleep Safety Indicator** Know exactly when your caffeine will drop to a safe level for sleep
-- **Smart Notifications** Get notified 30 minutes before your caffeine drops to a sleep safe level
-- **Today's Log** View and delete all drinks logged today
-- **History** Full log of every drink ever recorded, grouped by date
-- **Privacy First** All data is encrypted and stored locally using iOS Keychain via Expo SecureStore. Nothing is ever sent to a server.
+- **Quick Log:** One tap logging for espresso, coffee, tea, energy drinks, and more
+- **610 Drink Database:** Searchable database of popular drinks with accurate caffeine content, including Tim Hortons, Starbucks, McCafe, Red Bull, Monster, and hundreds more
+- **Live Caffeine Decay:** Real time display of how much caffeine is currently in your system, updated every minute using a 5 hour half life model
+- **Sleep Safety Indicator:** Know exactly when your caffeine will drop to a safe level for sleep
+- **Smart Notifications:** Get notified 30 minutes before your caffeine drops to a sleep safe level
+- **Today's Log:** View and delete all drinks logged today
+- **History:** Full log of every drink ever recorded, grouped by date
+- **Privacy First:** All data is encrypted and stored locally using iOS Keychain via Expo SecureStore. Nothing is ever sent to a server.
 
 ---
 
