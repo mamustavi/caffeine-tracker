@@ -1,6 +1,7 @@
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { useFocusEffect } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 const STORAGE_KEY = 'caffeine_logs';
@@ -29,6 +30,8 @@ function getDateKey(timestamp: number) {
 }
 
 export default function HistoryScreen() {
+  const theme = useAppTheme();
+  const styles = useMemo(() => getStyles(theme), [theme]);
   const [logs, setLogs] = useState<{ time: number; mg: number; name: string }[]>([]);
 
   useFocusEffect(
@@ -85,32 +88,36 @@ export default function HistoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#EDE8DD' },
-  content: { padding: 40, paddingTop: 80 },
-  emptyText: { color: '#999', fontFamily: 'Menlo', fontWeight: '400', fontSize: 13, textAlign: 'center', marginTop: 40 },
-  group: { marginBottom: 24 },
-  dateHeading: {
-    fontSize: 18,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-    color: '#2d2d2d',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  logRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 30,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#ffffff',
-  },
-  logName: { color: '#2d2d2d', flex: 1, fontFamily: 'Menlo', fontWeight: '400' },
-  logTime: { color: '#666', fontSize: 13, fontFamily: 'Menlo', fontWeight: '400' },
-  logMg: { color: '#D7263D', fontSize: 13, marginLeft: 10, fontFamily: 'Menlo', fontWeight: '400' },
-});
+type AppTheme = ReturnType<typeof useAppTheme>;
+
+function getStyles(theme: AppTheme) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: theme.screenBackground },
+    content: { padding: 40, paddingTop: 80 },
+    emptyText: { color: theme.mutedText, fontFamily: 'Menlo', fontWeight: '400', fontSize: 13, textAlign: 'center', marginTop: 40 },
+    group: { marginBottom: 24 },
+    dateHeading: {
+      fontSize: 18,
+      fontWeight: '600',
+      fontFamily: 'Georgia',
+      color: theme.primaryText,
+      marginBottom: 10,
+      textAlign: 'center',
+    },
+    logRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: theme.cardBackground,
+      borderRadius: 30,
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: theme.cardBorder,
+    },
+    logName: { color: theme.primaryText, flex: 1, fontFamily: 'Menlo', fontWeight: '400' },
+    logTime: { color: theme.secondaryText, fontSize: 13, fontFamily: 'Menlo', fontWeight: '400' },
+    logMg: { color: theme.accent, fontSize: 13, marginLeft: 10, fontFamily: 'Menlo', fontWeight: '400' },
+  });
+}

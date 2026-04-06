@@ -3,9 +3,10 @@ import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
 import { useFocusEffect } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import caffeineDb from '../../assets/caffeinated_drinks.json';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -80,6 +81,9 @@ async function requestNotificationPermission() {
 }
 
 export default function HomeScreen() {
+  const theme = useAppTheme();
+  const styles = useMemo(() => getStyles(theme), [theme]);
+
   const [logs, setLogs] = useState<{ time: number; mg: number; name: string }[]>([]);
   const [customDrinks, setCustomDrinks] = useState<{ name: string; caffeine_mg: number; type: string }[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -279,7 +283,7 @@ export default function HomeScreen() {
       keyboardShouldPersistTaps="handled"
     >
       {/* Current Level Card */}
-      <View style={[styles.card, { borderColor: safeToSleep ? '#628B48' : '#FF7F11' }]}>
+      <View style={[styles.card, { borderColor: safeToSleep ? theme.safeColor : theme.warningColor }]}>
         <Text style={styles.mgValue}>{Math.round(currentMg)} mg</Text>
         <Text style={styles.mgLabel}>currently in your system</Text>
         <View style={styles.sleepBadge}>
@@ -313,7 +317,7 @@ export default function HomeScreen() {
         <TextInput
           style={styles.searchInput}
           placeholder="e.g. Tim Hortons, Red Bull..."
-          placeholderTextColor="#999"
+          placeholderTextColor={theme.placeholderText}
           value={searchQuery}
           onChangeText={setSearchQuery}
           onFocus={handleSearchFocus}
@@ -387,7 +391,7 @@ export default function HomeScreen() {
                   if (selected) setPickerDate(selected);
                 }}
                 maximumDate={new Date()}
-                textColor="#2d2d2d"
+                textColor={theme.pickerTextColor}
               />
               <View style={styles.modalButtons}>
                 <TouchableOpacity
@@ -429,7 +433,7 @@ export default function HomeScreen() {
                 onChangeText={setMgInput}
                 keyboardType="number-pad"
                 placeholder="Enter mg"
-                placeholderTextColor="#999"
+                placeholderTextColor={theme.placeholderText}
                 autoFocus
               />
               <Text style={styles.mgEditorUnit}>mg</Text>
@@ -471,7 +475,7 @@ export default function HomeScreen() {
                 value={customName}
                 onChangeText={setCustomName}
                 placeholder="Drink name"
-                placeholderTextColor="#999"
+                placeholderTextColor={theme.placeholderText}
                 autoFocus
               />
               <TextInput
@@ -479,7 +483,7 @@ export default function HomeScreen() {
                 value={customMg}
                 onChangeText={setCustomMg}
                 placeholder="Caffeine amount (mg)"
-                placeholderTextColor="#999"
+                placeholderTextColor={theme.placeholderText}
                 keyboardType="number-pad"
               />
               <Text style={styles.customTimeLabel}>Time consumed</Text>
@@ -491,7 +495,7 @@ export default function HomeScreen() {
                   if (selected) setCustomTime(selected);
                 }}
                 maximumDate={new Date()}
-                textColor="#2d2d2d"
+                textColor={theme.pickerTextColor}
               />
               <View style={styles.modalButtons}>
                 <TouchableOpacity
@@ -515,169 +519,173 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#EDE8DD' },
-  content: { padding: 40, paddingTop: 80 },
-  card: {
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 30,
-    padding: 24,
-    alignItems: 'center',
-    marginBottom: 28,
-    borderWidth: 1,
-    borderColor: '#ffffff',
-  },
-  mgValue: { fontSize: 48, fontWeight: 'bold', color: '#2d2d2d', fontFamily: 'Georgia' },
-  mgLabel: { fontSize: 12, color: '#666', marginTop: 4, fontFamily: 'Menlo', fontWeight: '400' },
-  sleepBadge: {
-    marginTop: 12,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 30,
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: '#ffffff',
-  },
-  sleepText: { color: '#2d2d2d', fontSize: 14, fontFamily: 'Menlo', fontWeight: '400' },
-  sectionTitle: { fontSize: 18, fontWeight: '600', color: '#2d2d2d', marginBottom: 12, fontFamily: 'Georgia', textAlign: 'center' },
-  drinkGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 28 },
-  drinkButton: {
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 30,
-    padding: 14,
-    alignItems: 'center',
-    width: '30%',
-    borderWidth: 1,
-    borderColor: '#ffffff',
-  },
-  drinkEmoji: { fontSize: 24 },
-  drinkName: { color: '#2d2d2d', fontSize: 11, marginTop: 4, textAlign: 'center', fontFamily: 'Menlo', fontWeight: '400' },
-  drinkMg: { color: '#D7263D', fontSize: 11, marginTop: 2, fontFamily: 'Menlo', fontWeight: '400' },
-  searchInput: {
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 30,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    fontSize: 14,
-    fontFamily: 'Menlo',
-    fontWeight: '400',
-    color: '#2d2d2d',
-    borderWidth: 1,
-    borderColor: '#ffffff',
-    marginBottom: 8,
-  },
-  searchResults: {
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#ffffff',
-    marginBottom: 8,
-    overflow: 'hidden',
-  },
-  searchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.5)',
-  },
-  searchRowLeft: { flex: 1 },
-  searchName: { color: '#2d2d2d', fontSize: 13, fontFamily: 'Menlo', fontWeight: '400' },
-  searchType: { color: '#999', fontSize: 11, fontFamily: 'Menlo', fontWeight: '400', marginTop: 2 },
-  searchMg: { color: '#D7263D', fontSize: 13, fontFamily: 'Menlo', fontWeight: '400', marginLeft: 10 },
-  noResults: { paddingVertical: 12, alignItems: 'center', marginBottom: 8 },
-  noResultsText: { color: '#999', fontFamily: 'Menlo', fontWeight: '400', fontSize: 13 },
-  customDrinkBtn: {
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 30,
-    paddingVertical: 14,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#ffffff',
-    marginTop: 8,
-    marginBottom: 8,
-  },
-  customDrinkBtnText: { color: '#2d2d2d', fontFamily: 'Menlo', fontWeight: '400', fontSize: 14 },
-  logRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 30,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#ffffff',
-  },
-  logName: { color: '#2d2d2d', flex: 1, fontFamily: 'Menlo', fontWeight: '400' },
-  logTime: { color: '#666', fontSize: 13, fontFamily: 'Menlo', fontWeight: '400', textDecorationLine: 'underline', marginLeft: 10 },
-  logMg: { color: '#D7263D', fontSize: 13, marginLeft: 20, fontFamily: 'Menlo', fontWeight: '400', textDecorationLine: 'underline' },
-  deleteBtn: { marginLeft: 10, padding: 4, justifyContent: 'center', alignItems: 'center' },
-  deleteText: { color: '#D7263D', fontSize: 16, fontWeight: 'bold', fontFamily: 'Menlo' },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
-  },
-  modalCard: {
-    backgroundColor: '#EDE8DD',
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    padding: 30,
-    paddingTop: 50,
-    paddingBottom: 30,
-  },
-  modalTitle: { fontSize: 18, fontWeight: '600', fontFamily: 'Georgia', color: '#2d2d2d', textAlign: 'center', marginBottom: 12 },
-  modalSubtitle: { fontSize: 13, fontFamily: 'Menlo', color: '#666', textAlign: 'center', marginBottom: 12 },
-  modalButtons: { flexDirection: 'row', gap: 12, marginTop: 16 },
-  modalCancelBtn: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 30,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    borderWidth: 1,
-    borderColor: '#ffffff',
-    alignItems: 'center',
-  },
-  modalCancelText: { color: '#666', fontFamily: 'Menlo', fontWeight: '400' },
-  modalConfirmBtn: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 30,
-    backgroundColor: '#D7263D',
-    alignItems: 'center',
-  },
-  modalConfirmText: { color: '#ffffff', fontFamily: 'Menlo', fontWeight: '400' },
-  mgEditorInput: {
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 30,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    fontSize: 24,
-    fontFamily: 'Menlo',
-    fontWeight: '400',
-    color: '#2d2d2d',
-    borderWidth: 1,
-    borderColor: '#ffffff',
-    textAlign: 'center',
-    marginTop: 12,
-  },
-  mgEditorUnit: { textAlign: 'center', color: '#666', fontFamily: 'Menlo', fontWeight: '400', fontSize: 13, marginTop: 6 },
-  customInput: {
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 30,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    fontSize: 14,
-    fontFamily: 'Menlo',
-    fontWeight: '400',
-    color: '#2d2d2d',
-    borderWidth: 1,
-    borderColor: '#ffffff',
-    marginBottom: 12,
-  },
-  customTimeLabel: { fontSize: 13, fontFamily: 'Menlo', color: '#666', textAlign: 'center', marginBottom: 4 },
-});
+type AppTheme = ReturnType<typeof useAppTheme>;
+
+function getStyles(theme: AppTheme) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: theme.screenBackground },
+    content: { padding: 40, paddingTop: 80 },
+    card: {
+      backgroundColor: theme.cardBackground,
+      borderRadius: 30,
+      padding: 24,
+      alignItems: 'center',
+      marginBottom: 28,
+      borderWidth: 1,
+      borderColor: theme.cardBorder,
+    },
+    mgValue: { fontSize: 48, fontWeight: 'bold', color: theme.primaryText, fontFamily: 'Georgia' },
+    mgLabel: { fontSize: 12, color: theme.secondaryText, marginTop: 4, fontFamily: 'Menlo', fontWeight: '400' },
+    sleepBadge: {
+      marginTop: 12,
+      backgroundColor: theme.cardBackground,
+      borderRadius: 30,
+      paddingHorizontal: 16,
+      paddingVertical: 6,
+      borderWidth: 1,
+      borderColor: theme.cardBorder,
+    },
+    sleepText: { color: theme.primaryText, fontSize: 14, fontFamily: 'Menlo', fontWeight: '400' },
+    sectionTitle: { fontSize: 18, fontWeight: '600', color: theme.primaryText, marginBottom: 12, fontFamily: 'Georgia', textAlign: 'center' },
+    drinkGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 28 },
+    drinkButton: {
+      backgroundColor: theme.cardBackground,
+      borderRadius: 30,
+      padding: 14,
+      alignItems: 'center',
+      width: '30%',
+      borderWidth: 1,
+      borderColor: theme.cardBorder,
+    },
+    drinkEmoji: { fontSize: 24 },
+    drinkName: { color: theme.primaryText, fontSize: 11, marginTop: 4, textAlign: 'center', fontFamily: 'Menlo', fontWeight: '400' },
+    drinkMg: { color: theme.accent, fontSize: 11, marginTop: 2, fontFamily: 'Menlo', fontWeight: '400' },
+    searchInput: {
+      backgroundColor: theme.cardBackground,
+      borderRadius: 30,
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      fontSize: 14,
+      fontFamily: 'Menlo',
+      fontWeight: '400',
+      color: theme.primaryText,
+      borderWidth: 1,
+      borderColor: theme.cardBorder,
+      marginBottom: 8,
+    },
+    searchResults: {
+      backgroundColor: theme.cardBackground,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: theme.cardBorder,
+      marginBottom: 8,
+      overflow: 'hidden',
+    },
+    searchRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.searchRowBorder,
+    },
+    searchRowLeft: { flex: 1 },
+    searchName: { color: theme.primaryText, fontSize: 13, fontFamily: 'Menlo', fontWeight: '400' },
+    searchType: { color: theme.mutedText, fontSize: 11, fontFamily: 'Menlo', fontWeight: '400', marginTop: 2 },
+    searchMg: { color: theme.accent, fontSize: 13, fontFamily: 'Menlo', fontWeight: '400', marginLeft: 10 },
+    noResults: { paddingVertical: 12, alignItems: 'center', marginBottom: 8 },
+    noResultsText: { color: theme.mutedText, fontFamily: 'Menlo', fontWeight: '400', fontSize: 13 },
+    customDrinkBtn: {
+      backgroundColor: theme.cardBackground,
+      borderRadius: 30,
+      paddingVertical: 14,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: theme.cardBorder,
+      marginTop: 8,
+      marginBottom: 8,
+    },
+    customDrinkBtnText: { color: theme.primaryText, fontFamily: 'Menlo', fontWeight: '400', fontSize: 14 },
+    logRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: theme.cardBackground,
+      borderRadius: 30,
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: theme.cardBorder,
+    },
+    logName: { color: theme.primaryText, flex: 1, fontFamily: 'Menlo', fontWeight: '400' },
+    logTime: { color: theme.secondaryText, fontSize: 13, fontFamily: 'Menlo', fontWeight: '400', textDecorationLine: 'underline', marginLeft: 10 },
+    logMg: { color: theme.accent, fontSize: 13, marginLeft: 20, fontFamily: 'Menlo', fontWeight: '400', textDecorationLine: 'underline' },
+    deleteBtn: { marginLeft: 10, padding: 4, justifyContent: 'center', alignItems: 'center' },
+    deleteText: { color: theme.accent, fontSize: 16, fontWeight: 'bold', fontFamily: 'Menlo' },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: theme.modalOverlay,
+      justifyContent: 'flex-end',
+    },
+    modalCard: {
+      backgroundColor: theme.modalBackground,
+      borderTopLeftRadius: 30,
+      borderTopRightRadius: 30,
+      padding: 30,
+      paddingTop: 50,
+      paddingBottom: 30,
+    },
+    modalTitle: { fontSize: 18, fontWeight: '600', fontFamily: 'Georgia', color: theme.primaryText, textAlign: 'center', marginBottom: 12 },
+    modalSubtitle: { fontSize: 13, fontFamily: 'Menlo', color: theme.secondaryText, textAlign: 'center', marginBottom: 12 },
+    modalButtons: { flexDirection: 'row', gap: 12, marginTop: 16 },
+    modalCancelBtn: {
+      flex: 1,
+      paddingVertical: 14,
+      borderRadius: 30,
+      backgroundColor: theme.cardBackground,
+      borderWidth: 1,
+      borderColor: theme.cardBorder,
+      alignItems: 'center',
+    },
+    modalCancelText: { color: theme.secondaryText, fontFamily: 'Menlo', fontWeight: '400' },
+    modalConfirmBtn: {
+      flex: 1,
+      paddingVertical: 14,
+      borderRadius: 30,
+      backgroundColor: theme.accent,
+      alignItems: 'center',
+    },
+    modalConfirmText: { color: '#ffffff', fontFamily: 'Menlo', fontWeight: '400' },
+    mgEditorInput: {
+      backgroundColor: theme.cardBackground,
+      borderRadius: 30,
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      fontSize: 24,
+      fontFamily: 'Menlo',
+      fontWeight: '400',
+      color: theme.primaryText,
+      borderWidth: 1,
+      borderColor: theme.cardBorder,
+      textAlign: 'center',
+      marginTop: 12,
+    },
+    mgEditorUnit: { textAlign: 'center', color: theme.secondaryText, fontFamily: 'Menlo', fontWeight: '400', fontSize: 13, marginTop: 6 },
+    customInput: {
+      backgroundColor: theme.cardBackground,
+      borderRadius: 30,
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      fontSize: 14,
+      fontFamily: 'Menlo',
+      fontWeight: '400',
+      color: theme.primaryText,
+      borderWidth: 1,
+      borderColor: theme.cardBorder,
+      marginBottom: 12,
+    },
+    customTimeLabel: { fontSize: 13, fontFamily: 'Menlo', color: theme.secondaryText, textAlign: 'center', marginBottom: 4 },
+  });
+}

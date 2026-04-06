@@ -27,6 +27,50 @@ export const Colors = {
   },
 };
 
+// App-specific semantic color tokens
+export const AppColors = {
+  light: {
+    screenBackground: '#EDE8DD',
+    cardBackground: 'rgba(255,255,255,0.3)',
+    cardBorder: '#ffffff',
+    primaryText: '#2d2d2d',
+    secondaryText: '#666',
+    mutedText: '#999',
+    accent: '#D7263D',
+    searchRowBorder: 'rgba(255,255,255,0.5)',
+    modalBackground: '#EDE8DD',
+    modalOverlay: 'rgba(0,0,0,0.4)',
+    placeholderText: '#999',
+    tabBarBackground: 'rgba(255,255,255,0.3)',
+    tabBarBorder: '#ffffff',
+    tabActive: '#2d2d2d',
+    tabInactive: '#999',
+    pickerTextColor: '#2d2d2d',
+    safeColor: '#628B48',
+    warningColor: '#FF7F11',
+  },
+  dark: {
+    screenBackground: '#111827',
+    cardBackground: 'rgba(255,255,255,0.06)',
+    cardBorder: 'rgba(255,255,255,0.12)',
+    primaryText: '#E2E8F0',
+    secondaryText: '#94A3B8',
+    mutedText: '#64748B',
+    accent: '#D7263D',
+    searchRowBorder: 'rgba(255,255,255,0.08)',
+    modalBackground: '#1A2535',
+    modalOverlay: 'rgba(0,0,0,0.6)',
+    placeholderText: '#64748B',
+    tabBarBackground: 'rgba(17,24,39,0.97)',
+    tabBarBorder: 'rgba(255,255,255,0.1)',
+    tabActive: '#E2E8F0',
+    tabInactive: '#4B5A6B',
+    pickerTextColor: '#E2E8F0',
+    safeColor: '#628B48',
+    warningColor: '#FF7F11',
+  },
+};
+
 export const Fonts = Platform.select({
   ios: {
     /** iOS `UIFontDescriptorSystemDesignDefault` */
