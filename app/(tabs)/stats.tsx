@@ -25,10 +25,11 @@ type AppTheme = ReturnType<typeof useAppTheme>;
 
 // ── chart layout constants ────────────────────────────────────────────────────
 
-const LINE_H        = 130;
-const LINE_LEFT_PAD = 38;
-const LINE_BOT_PAD  = 20;
-const LINE_PLOT_H   = LINE_H - LINE_BOT_PAD;
+const LINE_H         = 130;
+const LINE_LEFT_PAD  = 38;
+const LINE_RIGHT_PAD = 6;
+const LINE_BOT_PAD   = 20;
+const LINE_PLOT_H    = LINE_H - LINE_BOT_PAD;
 const BAR_AREA_H    = 100;
 const HOUR_AREA_H   = 64;
 
@@ -114,20 +115,31 @@ export default function StatsScreen() {
     };
   }, [logs, daily]);
 
-  // Heatmap — weeks × 7-day columns
+  // Heatmap — full calendar year (Jan 1 – Dec 31)
+  const currentYear = new Date().getFullYear();
   const heatWeeks = useMemo(() => {
     const now = new Date(); now.setHours(23, 59, 59, 999);
-    const start = new Date(now);
-    start.setDate(start.getDate() - 364);
-    start.setDate(start.getDate() - start.getDay()); // align to Sunday
+    const year = now.getFullYear();
+
+    // Start on the Sunday on or before Jan 1
+    const jan1 = new Date(year, 0, 1);
+    const start = new Date(jan1);
+    start.setDate(start.getDate() - start.getDay());
+
+    const dec31 = new Date(year, 11, 31);
 
     const weeks: { date: Date; mg: number; future: boolean }[][] = [];
     const cur = new Date(start);
-    while (cur <= now) {
+    while (cur <= dec31) {
       const week: { date: Date; mg: number; future: boolean }[] = [];
       for (let d = 0; d < 7; d++) {
         const day = new Date(cur); day.setDate(cur.getDate() + d);
-        week.push({ date: new Date(day), mg: daily.get(dayKey(day)) ?? 0, future: day > now });
+        const inYear = day.getFullYear() === year;
+        week.push({
+          date:   new Date(day),
+          mg:     daily.get(dayKey(day)) ?? 0,
+          future: !inYear || day > now,
+        });
       }
       weeks.push(week);
       cur.setDate(cur.getDate() + 7);
@@ -146,13 +158,15 @@ export default function StatsScreen() {
   }, [heatWeeks]);
 
   // 30-day line chart
+  // Subtract card padding (16px each side) so SVG fits inside the card
+  const lineChartW = chartW - 32;
   const lineData = useMemo(() => {
     const values = Array.from({ length: 30 }, (_, i) => {
       const d = new Date(); d.setDate(d.getDate() - (29 - i));
       return daily.get(dayKey(d)) ?? 0;
     });
     const maxMg = Math.max(1, ...values);
-    const plotW = chartW - LINE_LEFT_PAD;
+    const plotW = lineChartW - LINE_LEFT_PAD - LINE_RIGHT_PAD;
 
     const pts = values.map((mg, i) => ({
       x:     LINE_LEFT_PAD + (i / 29) * plotW,
@@ -231,8 +245,8 @@ export default function StatsScreen() {
         ))}
       </View>
 
-      {/* ── 365-day heatmap ─────────────────────────────────────────────────── */}
-      <Text style={styles.sectionTitle}>365 Days</Text>
+      {/* ── Calendar-year heatmap ───────────────────────────────────────────── */}
+      <Text style={styles.sectionTitle}>{currentYear}</Text>
       <View style={styles.card}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View>
@@ -288,7 +302,7 @@ export default function StatsScreen() {
       {/* ── 30-day line chart ────────────────────────────────────────────────── */}
       <Text style={styles.sectionTitle}>Past 30 Days</Text>
       <View style={styles.card}>
-        <Svg width={chartW} height={LINE_H}>
+        <Svg width={lineChartW} height={LINE_H}>
           <Defs>
             <LinearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
               <Stop offset="0%" stopColor={theme.accent} stopOpacity={isDark ? 0.35 : 0.22} />
@@ -299,7 +313,7 @@ export default function StatsScreen() {
           {/* Horizontal grid lines */}
           {lineData.gridLines.map((gl, i) => (
             <Line key={i}
-              x1={LINE_LEFT_PAD} y1={gl.y} x2={chartW} y2={gl.y}
+              x1={LINE_LEFT_PAD} y1={gl.y} x2={lineChartW} y2={gl.y}
               stroke={gridColour} strokeWidth={1}
             />
           ))}
@@ -378,11 +392,9 @@ export default function StatsScreen() {
                   }} />
                 </View>
                 <View style={{ height: 22, justifyContent: 'center' }}>
-                  {h % 6 === 0 && (
-                    <Text style={styles.hourLabelText}>
-                      {h === 0 ? '12a' : h < 12 ? `${h}a` : h === 12 ? '12p' : `${h - 12}p`}
-                    </Text>
-                  )}
+                  <Text style={styles.hourLabelText}>
+                    {h === 0 ? '12a' : h === 12 ? '12p' : h < 12 ? `${h}` : `${h - 12}`}
+                  </Text>
                 </View>
               </View>
             );
@@ -481,7 +493,7 @@ function getStyles(theme: AppTheme) {
     },
 
     // Hours chart
-    hourLabelText: { fontSize: 8, color: theme.mutedText, fontFamily: 'Menlo', textAlign: 'center' },
+    hourLabelText: { fontSize: 7, color: theme.mutedText, fontFamily: 'Menlo', textAlign: 'center' },
 
     // Favourites
     drinkRow:  { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
