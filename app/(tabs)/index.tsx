@@ -1,10 +1,11 @@
+import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
 import { useFocusEffect } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import caffeineDb from '../../assets/caffeine_db.json';
+import { KeyboardAvoidingView, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import caffeineDb from '../../assets/caffeinated_drinks.json';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -29,6 +30,7 @@ const HALF_LIFE_HOURS = 5;
 const SLEEP_SAFE_MG = 50;
 const NOTIFY_AT_MG = 80;
 const STORAGE_KEY = 'caffeine_logs';
+const CUSTOM_DRINKS_KEY = 'custom_drinks';
 
 function isToday(timestamp: number) {
   const date = new Date(timestamp);
@@ -79,14 +81,24 @@ async function requestNotificationPermission() {
 
 export default function HomeScreen() {
   const [logs, setLogs] = useState<{ time: number; mg: number; name: string }[]>([]);
+  const [customDrinks, setCustomDrinks] = useState<{ name: string; caffeine_mg: number; type: string }[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [now, setNow] = useState(Date.now());
+  const [editingLog, setEditingLog] = useState<{ time: number; mg: number; name: string } | null>(null);
+  const [pickerDate, setPickerDate] = useState(new Date());
+  const [editingMgLog, setEditingMgLog] = useState<{ time: number; mg: number; name: string } | null>(null);
+  const [mgInput, setMgInput] = useState('');
+  const [showCustomModal, setShowCustomModal] = useState(false);
+  const [customName, setCustomName] = useState('');
+  const [customMg, setCustomMg] = useState('');
+  const [customTime, setCustomTime] = useState(new Date());
   const scrollRef = useRef<ScrollView>(null);
   const searchRef = useRef<View>(null);
 
   useFocusEffect(
     useCallback(() => {
       loadLogs();
+      loadCustomDrinks();
     }, [])
   );
 
@@ -110,11 +122,28 @@ export default function HomeScreen() {
     }
   }
 
+  async function loadCustomDrinks() {
+    try {
+      const raw = await SecureStore.getItemAsync(CUSTOM_DRINKS_KEY);
+      if (raw) setCustomDrinks(JSON.parse(raw));
+    } catch (e) {
+      console.error('Failed to load custom drinks:', e);
+    }
+  }
+
   async function saveLogs(updated: { time: number; mg: number; name: string }[]) {
     try {
       await SecureStore.setItemAsync(STORAGE_KEY, JSON.stringify(updated));
     } catch (e) {
       console.error('Failed to save logs:', e);
+    }
+  }
+
+  async function saveCustomDrinks(updated: { name: string; caffeine_mg: number; type: string }[]) {
+    try {
+      await SecureStore.setItemAsync(CUSTOM_DRINKS_KEY, JSON.stringify(updated));
+    } catch (e) {
+      console.error('Failed to save custom drinks:', e);
     }
   }
 
@@ -138,14 +167,99 @@ export default function HomeScreen() {
     await scheduleNotification(todaysUpdated);
   }
 
+  function openTimePicker(log: { time: number; mg: number; name: string }) {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setEditingLog(log);
+    setPickerDate(new Date(log.time));
+  }
+
+  async function confirmTimeEdit(selectedDate: Date) {
+    if (!editingLog) return;
+    const updated = logs.map(log =>
+      log.time === editingLog.time
+        ? { ...log, time: selectedDate.getTime() }
+        : log
+    );
+    setLogs(updated);
+    await saveLogs(updated);
+    const todaysUpdated = updated.filter(log => isToday(log.time));
+    await scheduleNotification(todaysUpdated);
+    setEditingLog(null);
+  }
+
+  function openMgEditor(log: { time: number; mg: number; name: string }) {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setEditingMgLog(log);
+    setMgInput(String(log.mg));
+  }
+
+  async function confirmMgEdit() {
+    if (!editingMgLog) return;
+    const parsed = parseInt(mgInput);
+    if (isNaN(parsed) || parsed <= 0) return;
+    const updated = logs.map(log =>
+      log.time === editingMgLog.time
+        ? { ...log, mg: parsed }
+        : log
+    );
+    setLogs(updated);
+    await saveLogs(updated);
+    const todaysUpdated = updated.filter(log => isToday(log.time));
+    await scheduleNotification(todaysUpdated);
+    setEditingMgLog(null);
+  }
+
+  function openCustomModal() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setCustomName('');
+    setCustomMg('');
+    setCustomTime(new Date());
+    setShowCustomModal(true);
+  }
+
+  async function confirmCustomDrink() {
+    const parsedMg = parseInt(customMg);
+    if (!customName.trim() || isNaN(parsedMg) || parsedMg <= 0) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    // Add to today's log with custom time
+    const newLog = { time: customTime.getTime(), mg: parsedMg, name: customName.trim() };
+    const updatedLogs = [...logs, newLog];
+    setLogs(updatedLogs);
+    await saveLogs(updatedLogs);
+
+    // Add to custom drinks database if not already there
+    const alreadyExists = customDrinks.some(
+      d => d.name.toLowerCase() === customName.trim().toLowerCase()
+    );
+    if (!alreadyExists) {
+      const updatedCustom = [...customDrinks, {
+        name: customName.trim(),
+        caffeine_mg: parsedMg,
+        type: 'Custom',
+      }];
+      setCustomDrinks(updatedCustom);
+      await saveCustomDrinks(updatedCustom);
+    }
+
+    const todaysUpdated = updatedLogs.filter(log => isToday(log.time));
+    await scheduleNotification(todaysUpdated);
+    setShowCustomModal(false);
+  }
+
   function handleSearchFocus() {
     setTimeout(() => {
       scrollRef.current?.scrollToEnd({ animated: true });
     }, 300);
   }
 
+  const allDrinks = [
+    ...(caffeineDb as { name: string; caffeine_mg: number; type: string }[]),
+    ...customDrinks,
+  ];
+
   const searchResults = searchQuery.length >= 2
-    ? (caffeineDb as { name: string; caffeine_mg: number; type: string }[])
+    ? allDrinks
         .filter(d => d.name.toLowerCase().includes(searchQuery.toLowerCase()))
         .slice(0, 8)
     : [];
@@ -228,6 +342,11 @@ export default function HomeScreen() {
         )}
       </View>
 
+      {/* Add Custom Drink */}
+      <TouchableOpacity style={styles.customDrinkBtn} onPress={openCustomModal}>
+        <Text style={styles.customDrinkBtnText}>+ Add Custom Drink</Text>
+      </TouchableOpacity>
+
       {/* Today's Log */}
       {todaysLogs.length > 0 && (
         <>
@@ -235,10 +354,14 @@ export default function HomeScreen() {
           {[...todaysLogs].reverse().map((log, i) => (
             <View key={i} style={styles.logRow}>
               <Text style={styles.logName}>{log.name}</Text>
-              <Text style={styles.logTime}>
-                {new Date(log.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </Text>
-              <Text style={styles.logMg}>{log.mg}mg</Text>
+              <TouchableOpacity onPress={() => openTimePicker(log)}>
+                <Text style={styles.logTime}>
+                  {new Date(log.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => openMgEditor(log)}>
+                <Text style={styles.logMg}>{log.mg}mg</Text>
+              </TouchableOpacity>
               <TouchableOpacity onPress={() => removeLog(log.time)} style={styles.deleteBtn}>
                 <Text style={styles.deleteText}>✕</Text>
               </TouchableOpacity>
@@ -248,6 +371,146 @@ export default function HomeScreen() {
       )}
 
       <View style={{ height: 300 }} />
+
+      {/* Time Picker Modal */}
+      {editingLog && (
+        <Modal transparent animationType="slide" visible={true}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>Edit Time</Text>
+              <Text style={styles.modalSubtitle}>{editingLog.name}</Text>
+              <DateTimePicker
+                value={pickerDate}
+                mode="time"
+                display="spinner"
+                onChange={(_, selected) => {
+                  if (selected) setPickerDate(selected);
+                }}
+                maximumDate={new Date()}
+                textColor="#2d2d2d"
+              />
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={styles.modalCancelBtn}
+                  onPress={() => setEditingLog(null)}
+                >
+                  <Text style={styles.modalCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.modalConfirmBtn}
+                  onPress={() => confirmTimeEdit(pickerDate)}
+                >
+                  <Text style={styles.modalConfirmText}>Confirm</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {/* Caffeine mg Editor Modal */}
+      {editingMgLog && (
+        <Modal transparent animationType="slide" visible={true}>
+          <KeyboardAvoidingView
+            style={styles.modalOverlay}
+            behavior="padding"
+          >
+            <TouchableOpacity
+              style={{ flex: 1 }}
+              activeOpacity={1}
+              onPress={() => setEditingMgLog(null)}
+            />
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>Edit Caffeine</Text>
+              <Text style={styles.modalSubtitle}>{editingMgLog.name}</Text>
+              <TextInput
+                style={styles.mgEditorInput}
+                value={mgInput}
+                onChangeText={setMgInput}
+                keyboardType="number-pad"
+                placeholder="Enter mg"
+                placeholderTextColor="#999"
+                autoFocus
+              />
+              <Text style={styles.mgEditorUnit}>mg</Text>
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={styles.modalCancelBtn}
+                  onPress={() => setEditingMgLog(null)}
+                >
+                  <Text style={styles.modalCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.modalConfirmBtn}
+                  onPress={confirmMgEdit}
+                >
+                  <Text style={styles.modalConfirmText}>Confirm</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </Modal>
+      )}
+
+      {/* Custom Drink Modal */}
+      {showCustomModal && (
+        <Modal transparent animationType="slide" visible={true}>
+          <KeyboardAvoidingView
+            style={styles.modalOverlay}
+            behavior="padding"
+          >
+            <TouchableOpacity
+              style={{ flex: 1 }}
+              activeOpacity={1}
+              onPress={() => setShowCustomModal(false)}
+            />
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>Add Custom Drink</Text>
+              <TextInput
+                style={styles.customInput}
+                value={customName}
+                onChangeText={setCustomName}
+                placeholder="Drink name"
+                placeholderTextColor="#999"
+                autoFocus
+              />
+              <TextInput
+                style={styles.customInput}
+                value={customMg}
+                onChangeText={setCustomMg}
+                placeholder="Caffeine amount (mg)"
+                placeholderTextColor="#999"
+                keyboardType="number-pad"
+              />
+              <Text style={styles.customTimeLabel}>Time consumed</Text>
+              <DateTimePicker
+                value={customTime}
+                mode="time"
+                display="spinner"
+                onChange={(_, selected) => {
+                  if (selected) setCustomTime(selected);
+                }}
+                maximumDate={new Date()}
+                textColor="#2d2d2d"
+              />
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={styles.modalCancelBtn}
+                  onPress={() => setShowCustomModal(false)}
+                >
+                  <Text style={styles.modalCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.modalConfirmBtn}
+                  onPress={confirmCustomDrink}
+                >
+                  <Text style={styles.modalConfirmText}>Add</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </Modal>
+      )}
     </ScrollView>
   );
 }
@@ -326,6 +589,17 @@ const styles = StyleSheet.create({
   searchMg: { color: '#D7263D', fontSize: 13, fontFamily: 'Menlo', fontWeight: '400', marginLeft: 10 },
   noResults: { paddingVertical: 12, alignItems: 'center', marginBottom: 8 },
   noResultsText: { color: '#999', fontFamily: 'Menlo', fontWeight: '400', fontSize: 13 },
+  customDrinkBtn: {
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 30,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ffffff',
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  customDrinkBtnText: { color: '#2d2d2d', fontFamily: 'Menlo', fontWeight: '400', fontSize: 14 },
   logRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -339,8 +613,71 @@ const styles = StyleSheet.create({
     borderColor: '#ffffff',
   },
   logName: { color: '#2d2d2d', flex: 1, fontFamily: 'Menlo', fontWeight: '400' },
-  logTime: { color: '#666', fontSize: 13, fontFamily: 'Menlo', fontWeight: '400' },
-  logMg: { color: '#D7263D', fontSize: 13, marginLeft: 10, fontFamily: 'Menlo', fontWeight: '400' },
+  logTime: { color: '#666', fontSize: 13, fontFamily: 'Menlo', fontWeight: '400', textDecorationLine: 'underline', marginLeft: 10 },
+  logMg: { color: '#D7263D', fontSize: 13, marginLeft: 20, fontFamily: 'Menlo', fontWeight: '400', textDecorationLine: 'underline' },
   deleteBtn: { marginLeft: 10, padding: 4, justifyContent: 'center', alignItems: 'center' },
   deleteText: { color: '#D7263D', fontSize: 16, fontWeight: 'bold', fontFamily: 'Menlo' },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  modalCard: {
+    backgroundColor: '#EDE8DD',
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    padding: 30,
+    paddingTop: 50,
+    paddingBottom: 30,
+  },
+  modalTitle: { fontSize: 18, fontWeight: '600', fontFamily: 'Georgia', color: '#2d2d2d', textAlign: 'center', marginBottom: 12 },
+  modalSubtitle: { fontSize: 13, fontFamily: 'Menlo', color: '#666', textAlign: 'center', marginBottom: 12 },
+  modalButtons: { flexDirection: 'row', gap: 12, marginTop: 16 },
+  modalCancelBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 30,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderWidth: 1,
+    borderColor: '#ffffff',
+    alignItems: 'center',
+  },
+  modalCancelText: { color: '#666', fontFamily: 'Menlo', fontWeight: '400' },
+  modalConfirmBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 30,
+    backgroundColor: '#D7263D',
+    alignItems: 'center',
+  },
+  modalConfirmText: { color: '#ffffff', fontFamily: 'Menlo', fontWeight: '400' },
+  mgEditorInput: {
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 30,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    fontSize: 24,
+    fontFamily: 'Menlo',
+    fontWeight: '400',
+    color: '#2d2d2d',
+    borderWidth: 1,
+    borderColor: '#ffffff',
+    textAlign: 'center',
+    marginTop: 12,
+  },
+  mgEditorUnit: { textAlign: 'center', color: '#666', fontFamily: 'Menlo', fontWeight: '400', fontSize: 13, marginTop: 6 },
+  customInput: {
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 30,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    fontSize: 14,
+    fontFamily: 'Menlo',
+    fontWeight: '400',
+    color: '#2d2d2d',
+    borderWidth: 1,
+    borderColor: '#ffffff',
+    marginBottom: 12,
+  },
+  customTimeLabel: { fontSize: 13, fontFamily: 'Menlo', color: '#666', textAlign: 'center', marginBottom: 4 },
 });
