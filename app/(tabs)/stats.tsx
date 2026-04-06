@@ -26,10 +26,12 @@ type AppTheme = ReturnType<typeof useAppTheme>;
 // ── chart layout constants ────────────────────────────────────────────────────
 
 const LINE_H         = 130;
+const LINE_TOP_PAD   = 12;  // keeps the top label from clipping
 const LINE_LEFT_PAD  = 38;
 const LINE_RIGHT_PAD = 6;
 const LINE_BOT_PAD   = 20;
-const LINE_PLOT_H    = LINE_H - LINE_BOT_PAD;
+const LINE_PLOT_H    = LINE_H - LINE_TOP_PAD - LINE_BOT_PAD; // usable plot height
+const LINE_BASE_Y    = LINE_H - LINE_BOT_PAD;                // y where mg=0 sits
 const BAR_AREA_H    = 100;
 const HOUR_AREA_H   = 64;
 
@@ -151,11 +153,15 @@ export default function StatsScreen() {
     const out: { idx: number; text: string }[] = [];
     let last = -1;
     heatWeeks.forEach((week, i) => {
-      const m = week[0].date.getMonth();
+      // Use the first cell that actually belongs to the current year so we
+      // never surface a "Dec" label from the pre-Jan alignment Sunday.
+      const firstInYear = week.find(d => d.date.getFullYear() === currentYear);
+      if (!firstInYear) return;
+      const m = firstInYear.date.getMonth();
       if (m !== last) { out.push({ idx: i, text: shortMonth(m) }); last = m; }
     });
     return out;
-  }, [heatWeeks]);
+  }, [heatWeeks, currentYear]);
 
   // 30-day line chart
   // Subtract card padding (16px each side) so SVG fits inside the card
@@ -170,20 +176,21 @@ export default function StatsScreen() {
 
     const pts = values.map((mg, i) => ({
       x:     LINE_LEFT_PAD + (i / 29) * plotW,
-      y:     LINE_PLOT_H - (mg / maxMg) * LINE_PLOT_H,
+      y:     LINE_TOP_PAD + LINE_PLOT_H - (mg / maxMg) * LINE_PLOT_H,
       mg,
       label: i === 29 ? 'Today' : (29 - i) % 7 === 0 ? `${29 - i}d` : '',
     }));
 
     const gridLines = [0.25, 0.5, 0.75, 1].map(f => ({
-      y:    LINE_PLOT_H - f * LINE_PLOT_H,
+      y:    LINE_TOP_PAD + LINE_PLOT_H - f * LINE_PLOT_H,
       text: `${Math.round(f * maxMg)}`,
     }));
 
     const linePath = pts
       .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
       .join(' ');
-    const areaPath = `${linePath} L ${pts[pts.length - 1].x.toFixed(1)} ${LINE_PLOT_H} L ${LINE_LEFT_PAD} ${LINE_PLOT_H} Z`;
+    // area closes at LINE_BASE_Y (the mg=0 baseline)
+    const areaPath = `${linePath} L ${pts[pts.length - 1].x.toFixed(1)} ${LINE_BASE_Y} L ${LINE_LEFT_PAD} ${LINE_BASE_Y} Z`;
 
     return { pts, gridLines, linePath, areaPath };
   }, [daily, chartW]);
@@ -337,11 +344,13 @@ export default function StatsScreen() {
             stroke={theme.accent} strokeWidth={2} strokeLinejoin="round"
           />
 
-          {/* X-axis labels */}
-          {lineData.pts.filter(p => p.label).map((p, i) => (
+          {/* X-axis labels — last label right-anchored so "Today" never clips */}
+          {lineData.pts.filter(p => p.label).map((p, i, arr) => (
             <SvgText key={i}
               x={p.x} y={LINE_H - 3}
-              fontSize={9} fill={theme.mutedText} textAnchor="middle" fontFamily="Menlo"
+              fontSize={9} fill={theme.mutedText}
+              textAnchor={i === arr.length - 1 ? 'end' : 'middle'}
+              fontFamily="Menlo"
             >
               {p.label}
             </SvgText>
@@ -392,9 +401,7 @@ export default function StatsScreen() {
                   }} />
                 </View>
                 <View style={{ height: 22, justifyContent: 'center' }}>
-                  <Text style={styles.hourLabelText}>
-                    {h === 0 ? '12a' : h === 12 ? '12p' : h < 12 ? `${h}` : `${h - 12}`}
-                  </Text>
+                  <Text style={styles.hourLabelText}>{h}</Text>
                 </View>
               </View>
             );
