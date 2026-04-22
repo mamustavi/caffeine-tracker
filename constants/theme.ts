@@ -5,9 +5,12 @@
 
 import { Platform } from 'react-native';
 
+// Legacy tint colours kept for components that still use the Colors palette directly.
 const tintColorLight = '#0a7ea4';
 const tintColorDark = '#fff';
 
+// Generic low-level colour tokens used by the default Expo template components.
+// Prefer AppColors for new app-specific components.
 export const Colors = {
   light: {
     text: '#11181C',
@@ -27,16 +30,17 @@ export const Colors = {
   },
 };
 
-// App-specific semantic color tokens
+// Semantic colour tokens used throughout the app's own screens and components.
+// Both light and dark variants must define the same set of keys.
 export const AppColors = {
   light: {
-    screenBackground: '#EDE8DD',
+    screenBackground: '#EDE8DD',       // warm off-white page background
     cardBackground: 'rgba(255,255,255,0.3)',
     cardBorder: '#ffffff',
     primaryText: '#2d2d2d',
     secondaryText: '#666',
     mutedText: '#999',
-    accent: '#D7263D',
+    accent: '#D7263D',                 // brand red used for mg values and interactive elements
     searchRowBorder: 'rgba(255,255,255,0.5)',
     modalBackground: '#EDE8DD',
     modalOverlay: 'rgba(0,0,0,0.4)',
@@ -46,8 +50,8 @@ export const AppColors = {
     tabActive: '#2d2d2d',
     tabInactive: '#999',
     pickerTextColor: '#2d2d2d',
-    safeColor: '#628B48',
-    warningColor: '#FF7F11',
+    safeColor: '#628B48',              // green — shown when caffeine is below the sleep-safe threshold
+    warningColor: '#FF7F11',           // orange — shown when caffeine is above the sleep-safe threshold
   },
   dark: {
     screenBackground: '#111827',
@@ -71,6 +75,8 @@ export const AppColors = {
   },
 };
 
+// Platform-specific font stacks. Use these when setting fontFamily so the app
+// uses the correct system font on each platform rather than a hardcoded string.
 export const Fonts = Platform.select({
   ios: {
     /** iOS `UIFontDescriptorSystemDesignDefault` */

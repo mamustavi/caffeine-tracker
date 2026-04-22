@@ -1,9 +1,11 @@
+// About screen — developer info, app philosophy, and a link to the source code.
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useMemo } from 'react';
 import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function AboutScreen() {
   const theme = useAppTheme();
+  // Recompute styles only when the theme changes (dark/light mode switch).
   const styles = useMemo(() => getStyles(theme), [theme]);
 
   return (
@@ -28,6 +30,7 @@ export default function AboutScreen() {
         <Text style={styles.body}>
           This app is fully open source. You can view, fork, and contribute to the codebase on GitHub.
         </Text>
+        {/* Opens the developer's GitHub profile in the device's default browser */}
         <TouchableOpacity
           style={styles.linkButton}
           onPress={() => Linking.openURL('https://github.com/mamustavi')}
@@ -42,6 +45,7 @@ export default function AboutScreen() {
 
 type AppTheme = ReturnType<typeof useAppTheme>;
 
+// Returns a theme-aware StyleSheet. Called inside useMemo so it only rebuilds on theme change.
 function getStyles(theme: AppTheme) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.screenBackground },

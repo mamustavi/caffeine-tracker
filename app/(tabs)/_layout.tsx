@@ -1,3 +1,4 @@
+// Tab bar layout — defines the four main tabs and their icons/colours.
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -10,7 +11,9 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        // Replace the default tab button with one that triggers haptic feedback on press.
         tabBarButton: HapticTab,
+        // Hide the tab bar when a keyboard is open so it doesn't overlap input fields.
         tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: theme.tabActive,
         tabBarInactiveTintColor: theme.tabInactive,

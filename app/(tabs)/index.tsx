@@ -1,3 +1,4 @@
+// Home screen — log drinks, view current caffeine level, and manage today's entries.
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
@@ -8,6 +9,7 @@ import { KeyboardAvoidingView, Modal, ScrollView, StyleSheet, Text, TextInput, T
 import caffeineDb from '../../assets/caffeinated_drinks.json';
 import { useAppTheme } from '@/hooks/use-app-theme';
 
+// Show notifications even when the app is in the foreground.
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -18,6 +20,7 @@ Notifications.setNotificationHandler({
   }),
 });
 
+// Quick-log preset drinks shown as a grid on the home screen.
 const DRINKS = [
   { name: 'Espresso', mg: 64, emoji: '🫘' },
   { name: 'Coffee', mg: 95, emoji: '☕' },
@@ -27,12 +30,16 @@ const DRINKS = [
   { name: 'Diet Coke', mg: 46, emoji: '🥤' },
 ];
 
+// Caffeine's biological half-life is roughly 5 hours in most adults.
 const HALF_LIFE_HOURS = 5;
+// Below this threshold the body is generally considered ready for sleep.
 const SLEEP_SAFE_MG = 50;
+// Send a heads-up notification when caffeine is about to drop to this level.
 const NOTIFY_AT_MG = 80;
 const STORAGE_KEY = 'caffeine_logs';
 const CUSTOM_DRINKS_KEY = 'custom_drinks';
 
+// Returns true if the given Unix timestamp falls on the current calendar day.
 function isToday(timestamp: number) {
   const date = new Date(timestamp);
   const today = new Date();
@@ -43,6 +50,8 @@ function isToday(timestamp: number) {
   );
 }
 
+// Calculates total active caffeine using exponential decay: mg × 0.5^(hours / half-life).
+// Each log entry decays independently from the time it was consumed.
 function getCurrentCaffeine(logs: { time: number; mg: number }[], atTime = Date.now()) {
   return logs.reduce((total, log) => {
     const hoursAgo = (atTime - log.time) / (1000 * 60 * 60);
@@ -51,13 +60,18 @@ function getCurrentCaffeine(logs: { time: number; mg: number }[], atTime = Date.
   }, 0);
 }
 
+// Inverts the decay formula to find how many milliseconds until active caffeine reaches targetMg.
+// Returns null if the level is already at or below the target.
 function getTimeUntilMg(logs: { time: number; mg: number }[], targetMg: number): number | null {
   const currentMg = getCurrentCaffeine(logs);
   if (currentMg <= targetMg) return null;
+  // Derived from: currentMg × 0.5^(t / half-life) = targetMg → t = log(currentMg/targetMg) / log(2) × half-life
   const hoursUntil = (Math.log(currentMg / targetMg) / Math.log(2)) * HALF_LIFE_HOURS;
   return hoursUntil * 60 * 60 * 1000;
 }
 
+// Cancels any existing scheduled notification and reschedules based on the current log state.
+// The notification fires when active caffeine is predicted to reach NOTIFY_AT_MG.
 async function scheduleNotification(logs: { time: number; mg: number }[]) {
   await Notifications.cancelAllScheduledNotificationsAsync();
   const msUntilNotify = getTimeUntilMg(logs, NOTIFY_AT_MG);
@@ -75,6 +89,7 @@ async function scheduleNotification(logs: { time: number; mg: number }[]) {
   });
 }
 
+// Prompts the user for notification permission on first launch.
 async function requestNotificationPermission() {
   const { status } = await Notifications.requestPermissionsAsync();
   return status === 'granted';
@@ -82,14 +97,20 @@ async function requestNotificationPermission() {
 
 export default function HomeScreen() {
   const theme = useAppTheme();
+  // Recompute styles only when the theme changes (dark/light mode switch).
   const styles = useMemo(() => getStyles(theme), [theme]);
 
+  // All caffeine logs across all time (today + history).
   const [logs, setLogs] = useState<{ time: number; mg: number; name: string }[]>([]);
+  // User-created drinks persisted alongside the built-in database.
   const [customDrinks, setCustomDrinks] = useState<{ name: string; caffeine_mg: number; type: string }[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  // Ticks every minute so the displayed caffeine level stays current without a full reload.
   const [now, setNow] = useState(Date.now());
+  // Controls the time-edit picker modal — null means the modal is closed.
   const [editingLog, setEditingLog] = useState<{ time: number; mg: number; name: string } | null>(null);
   const [pickerDate, setPickerDate] = useState(new Date());
+  // Controls the mg-edit modal — null means the modal is closed.
   const [editingMgLog, setEditingMgLog] = useState<{ time: number; mg: number; name: string } | null>(null);
   const [mgInput, setMgInput] = useState('');
   const [showCustomModal, setShowCustomModal] = useState(false);
@@ -99,6 +120,7 @@ export default function HomeScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const searchRef = useRef<View>(null);
 
+  // Reload logs whenever the user navigates back to this tab.
   useFocusEffect(
     useCallback(() => {
       loadLogs();
@@ -106,10 +128,12 @@ export default function HomeScreen() {
     }, [])
   );
 
+  // Request notification permission once on mount.
   useEffect(() => {
     requestNotificationPermission();
   }, []);
 
+  // Tick every 60 seconds so the decay calculation in the render is always fresh.
   useEffect(() => {
     const interval = setInterval(() => {
       setNow(Date.now());
@@ -151,6 +175,7 @@ export default function HomeScreen() {
     }
   }
 
+  // Adds a new log entry stamped with the current time and reschedules the notification.
   async function logDrink(name: string, mg: number) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const newLog = { time: Date.now(), mg, name };
@@ -158,10 +183,12 @@ export default function HomeScreen() {
     setLogs(updated);
     await saveLogs(updated);
     setSearchQuery('');
+    // Notifications are based only on today's intake, not historical logs.
     const todaysUpdated = updated.filter(log => isToday(log.time));
     await scheduleNotification(todaysUpdated);
   }
 
+  // Removes a log entry by its timestamp and updates the notification schedule.
   async function removeLog(time: number) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const updated = logs.filter(log => log.time !== time);
@@ -171,12 +198,14 @@ export default function HomeScreen() {
     await scheduleNotification(todaysUpdated);
   }
 
+  // Opens the time-picker modal pre-filled with the log's existing timestamp.
   function openTimePicker(log: { time: number; mg: number; name: string }) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setEditingLog(log);
     setPickerDate(new Date(log.time));
   }
 
+  // Commits the time change selected in the picker and re-schedules notifications.
   async function confirmTimeEdit(selectedDate: Date) {
     if (!editingLog) return;
     const updated = logs.map(log =>
@@ -191,12 +220,14 @@ export default function HomeScreen() {
     setEditingLog(null);
   }
 
+  // Opens the mg-edit modal pre-filled with the log's current caffeine value.
   function openMgEditor(log: { time: number; mg: number; name: string }) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setEditingMgLog(log);
     setMgInput(String(log.mg));
   }
 
+  // Validates and commits the edited mg value, then re-schedules notifications.
   async function confirmMgEdit() {
     if (!editingMgLog) return;
     const parsed = parseInt(mgInput);
@@ -213,6 +244,7 @@ export default function HomeScreen() {
     setEditingMgLog(null);
   }
 
+  // Resets the custom drink form fields and opens the modal.
   function openCustomModal() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setCustomName('');
@@ -221,18 +253,19 @@ export default function HomeScreen() {
     setShowCustomModal(true);
   }
 
+  // Logs the custom drink with the chosen time and saves it to the custom drinks database
+  // if it doesn't already exist there (case-insensitive name match).
   async function confirmCustomDrink() {
     const parsedMg = parseInt(customMg);
     if (!customName.trim() || isNaN(parsedMg) || parsedMg <= 0) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    // Add to today's log with custom time
     const newLog = { time: customTime.getTime(), mg: parsedMg, name: customName.trim() };
     const updatedLogs = [...logs, newLog];
     setLogs(updatedLogs);
     await saveLogs(updatedLogs);
 
-    // Add to custom drinks database if not already there
+    // Persist new custom drinks so they appear in future search results.
     const alreadyExists = customDrinks.some(
       d => d.name.toLowerCase() === customName.trim().toLowerCase()
     );
@@ -251,23 +284,27 @@ export default function HomeScreen() {
     setShowCustomModal(false);
   }
 
+  // Delays the scroll slightly to let the keyboard animation finish first.
   function handleSearchFocus() {
     setTimeout(() => {
       scrollRef.current?.scrollToEnd({ animated: true });
     }, 300);
   }
 
+  // Merge the built-in caffeine database with user-created custom drinks for search.
   const allDrinks = [
     ...(caffeineDb as { name: string; caffeine_mg: number; type: string }[]),
     ...customDrinks,
   ];
 
+  // Only search when the user has typed at least 2 characters, limit to 8 results.
   const searchResults = searchQuery.length >= 2
     ? allDrinks
         .filter(d => d.name.toLowerCase().includes(searchQuery.toLowerCase()))
         .slice(0, 8)
     : [];
 
+  // Derived display values — recalculate on each render since `now` ticks every minute.
   const todaysLogs = logs.filter(log => isToday(log.time));
   const currentMg = getCurrentCaffeine(todaysLogs);
   const safeToSleep = currentMg < SLEEP_SAFE_MG;
@@ -280,9 +317,10 @@ export default function HomeScreen() {
       ref={scrollRef}
       style={styles.container}
       contentContainerStyle={styles.content}
+      // Allow tapping search results without dismissing the keyboard first.
       keyboardShouldPersistTaps="handled"
     >
-      {/* Current Level Card */}
+      {/* Current Level Card — border colour signals safe vs. warning state */}
       <View style={[styles.card, { borderColor: safeToSleep ? theme.safeColor : theme.warningColor }]}>
         <Text style={styles.mgValue}>{Math.round(currentMg)} mg</Text>
         <Text style={styles.mgLabel}>currently in your system</Text>
@@ -295,7 +333,7 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {/* Log a Drink */}
+      {/* Log a Drink — preset buttons for the most common drinks */}
       <Text style={styles.sectionTitle}>Log a Drink</Text>
       <View style={styles.drinkGrid}>
         {DRINKS.map((drink) => (
@@ -311,7 +349,7 @@ export default function HomeScreen() {
         ))}
       </View>
 
-      {/* Search Drinks */}
+      {/* Search Drinks — searches across built-in + custom drink databases */}
       <View ref={searchRef}>
         <Text style={styles.sectionTitle}>Search Drinks</Text>
         <TextInput
@@ -346,23 +384,25 @@ export default function HomeScreen() {
         )}
       </View>
 
-      {/* Add Custom Drink */}
+      {/* Add Custom Drink button — opens modal to log an unlisted drink */}
       <TouchableOpacity style={styles.customDrinkBtn} onPress={openCustomModal}>
         <Text style={styles.customDrinkBtnText}>+ Add Custom Drink</Text>
       </TouchableOpacity>
 
-      {/* Today's Log */}
+      {/* Today's Log — shown in reverse chronological order; tap time/mg to edit */}
       {todaysLogs.length > 0 && (
         <>
           <Text style={[styles.sectionTitle, { marginTop: 28 }]}>Today's Log</Text>
           {[...todaysLogs].reverse().map((log, i) => (
             <View key={i} style={styles.logRow}>
               <Text style={styles.logName}>{log.name}</Text>
+              {/* Tap the time to open the time-picker modal */}
               <TouchableOpacity onPress={() => openTimePicker(log)}>
                 <Text style={styles.logTime}>
                   {new Date(log.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Text>
               </TouchableOpacity>
+              {/* Tap the mg value to open the inline mg editor */}
               <TouchableOpacity onPress={() => openMgEditor(log)}>
                 <Text style={styles.logMg}>{log.mg}mg</Text>
               </TouchableOpacity>
@@ -374,9 +414,10 @@ export default function HomeScreen() {
         </>
       )}
 
+      {/* Spacer so content isn't hidden behind the tab bar */}
       <View style={{ height: 300 }} />
 
-      {/* Time Picker Modal */}
+      {/* Time Picker Modal — lets the user correct when a drink was consumed */}
       {editingLog && (
         <Modal transparent animationType="slide" visible={true}>
           <View style={styles.modalOverlay}>
@@ -412,13 +453,14 @@ export default function HomeScreen() {
         </Modal>
       )}
 
-      {/* Caffeine mg Editor Modal */}
+      {/* Caffeine mg Editor Modal — allows correcting the logged caffeine amount */}
       {editingMgLog && (
         <Modal transparent animationType="slide" visible={true}>
           <KeyboardAvoidingView
             style={styles.modalOverlay}
             behavior="padding"
           >
+            {/* Tapping the backdrop dismisses the modal */}
             <TouchableOpacity
               style={{ flex: 1 }}
               activeOpacity={1}
@@ -456,13 +498,14 @@ export default function HomeScreen() {
         </Modal>
       )}
 
-      {/* Custom Drink Modal */}
+      {/* Custom Drink Modal — log a drink not in the built-in database */}
       {showCustomModal && (
         <Modal transparent animationType="slide" visible={true}>
           <KeyboardAvoidingView
             style={styles.modalOverlay}
             behavior="padding"
           >
+            {/* Tapping the backdrop dismisses the modal */}
             <TouchableOpacity
               style={{ flex: 1 }}
               activeOpacity={1}
@@ -521,6 +564,7 @@ export default function HomeScreen() {
 
 type AppTheme = ReturnType<typeof useAppTheme>;
 
+// Returns a theme-aware StyleSheet. Called inside useMemo so it only rebuilds on theme change.
 function getStyles(theme: AppTheme) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.screenBackground },
@@ -620,6 +664,7 @@ function getStyles(theme: AppTheme) {
       borderColor: theme.cardBorder,
     },
     logName: { color: theme.primaryText, flex: 1, fontFamily: 'Menlo', fontWeight: '400' },
+    // Underline signals the field is tappable/editable.
     logTime: { color: theme.secondaryText, fontSize: 13, fontFamily: 'Menlo', fontWeight: '400', textDecorationLine: 'underline', marginLeft: 10 },
     logMg: { color: theme.accent, fontSize: 13, marginLeft: 20, fontFamily: 'Menlo', fontWeight: '400', textDecorationLine: 'underline' },
     deleteBtn: { marginLeft: 10, padding: 4, justifyContent: 'center', alignItems: 'center' },

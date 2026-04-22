@@ -1,3 +1,4 @@
+// History screen — all caffeine logs grouped by day in reverse chronological order.
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useFocusEffect } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
@@ -6,6 +7,8 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 const STORAGE_KEY = 'caffeine_logs';
 
+// Returns the day number with the correct English ordinal suffix (1st, 2nd, 3rd, 4th…).
+// The 11th/12th/13th edge case is handled by the leading guard: days 4–20 always use "th".
 function getOrdinal(day: number) {
   if (day > 3 && day < 21) return `${day}th`;
   switch (day % 10) {
@@ -16,6 +19,7 @@ function getOrdinal(day: number) {
   }
 }
 
+// Formats a Unix timestamp into a human-readable date label, e.g. "Monday, April 21st".
 function getFormattedDate(timestamp: number) {
   const date = new Date(timestamp);
   const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
@@ -24,6 +28,8 @@ function getFormattedDate(timestamp: number) {
   return `${weekday}, ${month} ${day}`;
 }
 
+// Produces a stable string key that uniquely identifies a calendar day,
+// used to group log entries together regardless of their exact time.
 function getDateKey(timestamp: number) {
   const date = new Date(timestamp);
   return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
@@ -31,9 +37,12 @@ function getDateKey(timestamp: number) {
 
 export default function HistoryScreen() {
   const theme = useAppTheme();
+  // Recompute styles only when the theme changes (dark/light mode switch).
   const styles = useMemo(() => getStyles(theme), [theme]);
   const [logs, setLogs] = useState<{ time: number; mg: number; name: string }[]>([]);
 
+  // Reload logs whenever the user navigates back to this tab so edits made on
+  // the Home screen are immediately visible here.
   useFocusEffect(
     useCallback(() => {
       loadLogs();
@@ -49,6 +58,9 @@ export default function HistoryScreen() {
     }
   }
 
+  // Group logs by calendar day (most recent first).
+  // `seen` maps a dateKey to its index in `grouped` to avoid a second linear scan
+  // when appending entries to an existing group.
   const grouped: { dateKey: string; dateLabel: string; entries: typeof logs }[] = [];
   const seen: Record<string, number> = {};
 
@@ -83,6 +95,7 @@ export default function HistoryScreen() {
         </View>
       ))}
 
+      {/* Spacer so the last group isn't hidden behind the tab bar */}
       <View style={{ height: 40 }} />
     </ScrollView>
   );
@@ -90,6 +103,7 @@ export default function HistoryScreen() {
 
 type AppTheme = ReturnType<typeof useAppTheme>;
 
+// Returns a theme-aware StyleSheet. Called inside useMemo so it only rebuilds on theme change.
 function getStyles(theme: AppTheme) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.screenBackground },
