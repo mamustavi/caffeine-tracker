@@ -38,41 +38,6 @@ This app collects no data whatsoever. There are no analytics, no crash reporting
 
 ---
 
-## Getting Started
-
-### Prerequisites
-
-- Node.js v20 or higher
-- [Expo Go](https://expo.dev/client) installed on your iPhone
-- A Linux, macOS, or Windows machine
-
-### Installation
-
-```bash
-git clone https://github.com/mamustavi/caffeine-tracker.git
-cd caffeine-tracker
-npm install
-npx expo start
-```
-
-Scan the QR code with your iPhone camera to open the app in Expo Go.
-
----
-
-## Building for Production
-
-This app uses [EAS Build](https://docs.expo.dev/build/introduction/) to produce a production iOS binary without requiring a Mac.
-
-```bash
-npm install -g eas-cli
-eas login
-eas build --platform ios
-```
-
-You will need an [Apple Developer account](https://developer.apple.com/) ($99/year) to submit to the App Store.
-
----
-
 ## Contributing
 
 Contributions are welcome. Please open an issue first to discuss what you would like to change.
@@ -93,14 +58,7 @@ If you would like to add or correct a drink entry, please open a Pull Request wi
 
 ---
 
-## License
-
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
-
----
-
-## Developer
-
 **Adnan Mustavi** is a researcher, data analyst, and app developer based in Toronto, Canada.
 
 [github.com/mamustavi](https://github.com/mamustavi)
+[linkedin.com/mamustavi](https://www.linkedin.com/in/mamustavi/)
