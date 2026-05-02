@@ -12,16 +12,17 @@ export default function AboutScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
 
       <View style={styles.card}>
-        <Text style={styles.heading}>About the Developer</Text>
+        <Text style={styles.heading}>About this App</Text>
         <Text style={styles.body}>
-          Adnan Mustavi is a clinical researcher, data analyst, and app developer based in Toronto, Canada.
+          This app aims to provide a privacy first, free, and open source alternative to other caffeine trackers. No accounts, no subscriptions, no data collection. Everything stays on your device.
         </Text>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.heading}>About this App</Text>
+        <Text style={styles.heading}>Privacy Policy</Text>
         <Text style={styles.body}>
-          This app aims to provide a privacy first, free, and open source alternative to other caffeine trackers. No accounts, no subscriptions, no data collection. Everything stays on your device.
+          Bevi does not collect, store, or share any personal data. All caffeine logs are saved locally on your device using encrypted storage and are never transmitted anywhere.{'\n\n'}
+          No analytics, no tracking, no third-party SDKs. Your data is yours.
         </Text>
       </View>
 
@@ -30,13 +31,19 @@ export default function AboutScreen() {
         <Text style={styles.body}>
           This app is fully open source. You can view, fork, and contribute to the codebase on GitHub.
         </Text>
-        {/* Opens the developer's GitHub profile in the device's default browser */}
         <TouchableOpacity
           style={styles.linkButton}
           onPress={() => Linking.openURL('https://github.com/mamustavi')}
         >
           <Text style={styles.linkText}>View on GitHub →</Text>
         </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.heading}>About the Developer</Text>
+        <Text style={styles.body}>
+          Adnan Mustavi is a clinical researcher, data analyst, and app developer based in Toronto, Canada.
+        </Text>
       </View>
 
     </ScrollView>

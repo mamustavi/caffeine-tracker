@@ -78,7 +78,7 @@ function getDailyTotals(logs: LogEntry[]): Map<string, number> {
 // Four buckets: none / low (<100 mg) / medium (<200 mg) / high (<300 mg) / max (≥300 mg).
 // Dark mode uses slightly more opaque tints so cells are visible on the dark background.
 function heatColor(mg: number, isDark: boolean): string {
-  if (mg <= 0) return isDark ? '#1B2638' : 'rgba(0,0,0,0.07)';
+  if (mg <= 0) return isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
   if (mg < 100) return isDark ? 'rgba(215,38,61,0.28)' : 'rgba(215,38,61,0.22)';
   if (mg < 200) return isDark ? 'rgba(215,38,61,0.52)' : 'rgba(215,38,61,0.47)';
   if (mg < 300) return isDark ? 'rgba(215,38,61,0.76)' : 'rgba(215,38,61,0.70)';

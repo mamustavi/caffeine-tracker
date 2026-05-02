@@ -1,4 +1,5 @@
 // Home screen — log drinks, view current caffeine level, and manage today's entries.
+import { useAppTheme } from '@/hooks/use-app-theme';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
@@ -7,7 +8,6 @@ import * as SecureStore from 'expo-secure-store';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import caffeineDb from '../../assets/caffeinated_drinks.json';
-import { useAppTheme } from '@/hooks/use-app-theme';
 
 // Show notifications even when the app is in the foreground.
 Notifications.setNotificationHandler({
