@@ -21,7 +21,7 @@ export default function AboutScreen() {
       <View style={styles.card}>
         <Text style={styles.heading}>Privacy Policy</Text>
         <Text style={styles.body}>
-          halflife does not collect, store, or share any personal data. All caffeine logs are saved locally on your device using encrypted storage and are never transmitted anywhere.{'\n\n'}
+          tau does not collect, store, or share any personal data. All caffeine logs are saved locally on your device using encrypted storage and are never transmitted anywhere.{'\n\n'}
           No analytics, no tracking, no third-party SDKs. Your data is yours.
         </Text>
       </View>

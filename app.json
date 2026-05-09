@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "halflife",
-    "slug": "halflife",
+    "name": "tau",
+    "slug": "tau",
     "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "halflife",
+    "scheme": "tau",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/images/splash-icon.png",
@@ -41,6 +41,7 @@
       "eas": {
         "projectId": "c803e654-371d-4146-b290-408eba0b9ee7"
       }
-    }
+    },
+    "owner": "mamustavi"
   }
 }
