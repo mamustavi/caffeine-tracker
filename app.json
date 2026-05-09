@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Bevi",
-    "slug": "bevi",
+    "name": "halflife",
+    "slug": "halflife",
     "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "bevi",
+    "scheme": "halflife",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/images/splash-icon.png",
