@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "tau",
-    "slug": "tau",
+    "name": "eluent",
+    "slug": "eluent",
     "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "tau",
+    "scheme": "eluent",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/images/splash-icon.png",
